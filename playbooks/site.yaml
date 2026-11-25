@@ -1,0 +1,2 @@
+- import_playbook: docker.yaml 
+- import_playbook: swarm.yaml

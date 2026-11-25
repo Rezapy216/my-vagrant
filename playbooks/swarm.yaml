@@ -1,0 +1,34 @@
+---
+- name: initial docker swarm
+  hosts: managers
+  become: true
+  tasks:
+    - name: check current swarm state
+      command: docker info --format '{% raw %}{{.Swarm.LocalNodeState}}{% endraw %}'
+      register: swarm_state
+      changed_when: false
+
+    - name: Init swarm
+      command: docker swarm init --advertise-addr {{ ansible_host }}
+      when: swarm_state.stdout != "active"
+
+    - name: get worker join token
+      command: docker swarm join-token -q worker
+      register: worker_token
+      changed_when: false
+    
+- name: Join workers to swarm
+  hosts: workers
+  become: true
+
+  tasks:
+    - name: Check current swarm state
+      command: docker info --format '{% raw %}{{.Swarm.LocalNodeState}}{% endraw %}'
+      register: swarm_state
+      changed_when: false
+
+    - name: Join swarm as worker
+      command: > 
+        docker swarm join --token {{ hostvars['manager']['worker_token'].stdout }}
+        {{ hostvars['manager'].ansible_host }}:2377
+      when: swarm_state.stdout != "active"

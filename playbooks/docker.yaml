@@ -1,0 +1,51 @@
+---
+- name: install docker
+  hosts: docker
+  become: true
+
+  tasks:
+    - name: install dependencies
+      apt:
+        name:
+        - apt-transport-https
+        - ca-certificates
+        - curl
+        - gnupg
+        - lsb-release
+
+    - name: add docker GPG key
+      apt_key: 
+        url: "{{ docker_gpg_url }}"
+        state: present
+
+    - name: add docker api repository
+      apt_repository:
+        repo: "{{ docker_repo_url }}"
+        state: present
+
+    - name: install docker engin
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: present
+        update_cache: true
+
+    - name: enable and start docker service
+      service:
+        name: docker
+        state: started
+        enabled: yes
+      
+
+
+    - name: add users to docker group
+      user:
+        name: "{{ item }}"
+        groups: docker
+        append: true
+      loop: "{{ docker_users }}"
+        
